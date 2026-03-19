@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>sandsim</title>
+    
+    <link rel="stylesheet" href="css/env.css">
+    <link rel="stylesheet" href="css/main.css">
+  </head>
+  <body>
+    <div id="app">
+        <div class="row">
+          <div class="row">
+            <div class="column">
+              <div id="temp-bar">
+                <input type="number" name="Temperature Input" value="20" id="temp-input">
+              </div>
+              <div id="particle-bar"></div>
+            </div>
+            <div class="column">
+              <div id="topbar">
+                <span id="particle-count">100000</span>
+              </div>
+              <canvas id="canvas"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
