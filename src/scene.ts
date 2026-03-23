@@ -113,7 +113,7 @@ export function swapParticle(before: Pos, now: Pos) {
             if (now_type.behaviour == ParticleBehaviour.Solid)
                 return;
 
-            if (before_type.heavyness ?? 0 >= (now_type.heavyness ?? 0))
+            if (before_type.heavyness ?? 0 > (now_type.heavyness ?? 0))
                 return;
         }
     }
