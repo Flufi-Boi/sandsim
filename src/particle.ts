@@ -30,6 +30,7 @@ export const min_density = 0.00001;
 export enum ParticleType {
     Wood,
     Metal,
+    Tin,
 
     Clone,
 
@@ -39,6 +40,7 @@ export enum ParticleType {
     Acid,
     Oil,
     LiquidOxygen,
+    MoltenTin,
 
     Steam,
     Gas,
@@ -57,6 +59,9 @@ export const particleData: Record<ParticleType, {
     resting_temp?: number,                   // base temp of particle
     heat_conductivity?: number,              // how fast temperature conducts
 
+    above?: [number, ParticleType],          // once the particle is above this, switch
+    below?: [number, ParticleType],          // once the particle is below this, switch
+
     acidic?: boolean,                        // is acidic
     acid_immune?: boolean,                   // doesnt not get corroded by acid
     
@@ -74,11 +79,20 @@ export const particleData: Record<ParticleType, {
         flammable: true
     },
     [ParticleType.Metal]: {
-        color: "#bdbdbdff",
+        color: "#818181ff",
 
         behaviour: ParticleBehaviour.Solid,
         heavyness: 20,
         heat_conductivity: .2,
+    },
+    [ParticleType.Tin]: {
+        color: "#c2c2c2ff",
+
+        behaviour: ParticleBehaviour.Solid,
+        heavyness: 20,
+        heat_conductivity: .2,
+
+        above: [200, ParticleType.MoltenTin]
     },
 
     [ParticleType.Clone]: {
@@ -101,6 +115,8 @@ export const particleData: Record<ParticleType, {
 
         behaviour: ParticleBehaviour.Liquid,
         heavyness: 10,
+
+        above: [100, ParticleType.Steam]
     },
     [ParticleType.Acid]: {
         color: "#73e048ff",
@@ -124,6 +140,17 @@ export const particleData: Record<ParticleType, {
         behaviour: ParticleBehaviour.Liquid,
         resting_temp: -500,
         heavyness: 30,
+
+        above: [-500, ParticleType.Oxygen]
+    },
+    [ParticleType.MoltenTin]: {
+        color: "#ff450d",
+
+        behaviour: ParticleBehaviour.Liquid,
+        resting_temp: 200,
+        heavyness: 30,
+
+        below: [180, ParticleType.Tin]
     },
 
     [ParticleType.Steam]: {
@@ -132,6 +159,8 @@ export const particleData: Record<ParticleType, {
         behaviour: ParticleBehaviour.Gas,
         heavyness: -5,
         resting_temp: 120,
+
+        below: [80, ParticleType.Water]
     },
     [ParticleType.Gas]: {
         color: "#a7ec66ff",
@@ -146,7 +175,9 @@ export const particleData: Record<ParticleType, {
 
         behaviour: ParticleBehaviour.Gas,
 
-        flammable: true
+        flammable: true,
+
+        below: [-450, ParticleType.LiquidOxygen]
     },
     
     [ParticleType.Fire]: {
@@ -154,8 +185,8 @@ export const particleData: Record<ParticleType, {
 
         behaviour: ParticleBehaviour.Fire,
         heavyness: -5,
-        resting_temp: 200,
-        heat_conductivity: .5,
+        resting_temp: 350,
+        heat_conductivity: 1,
 
         acid_immune: true,
 
@@ -241,29 +272,20 @@ export function updateParticle(particle: Particle, pos: Pos) {
                 clearParticle(pos);
         }
     }
-
-    // water evaporation
-    if (particle.type == ParticleType.Water && particle.temp >= 100) {
-        placeParticle(pos, ParticleType.Steam);
-    }
-    // water condensation
-    if (particle.type == ParticleType.Steam && particle.temp < 80) {
-        if (particle.density! > .05)
-            placeParticle(pos, ParticleType.Water);
-        else
-            clearParticle(pos);
-    }
-
-    // oxygen evaporation
-    if (particle.type == ParticleType.LiquidOxygen && particle.temp >= -450) {
-        placeParticle(pos, ParticleType.Oxygen);
-    }
-    // oxygen condensation
-    if (particle.type == ParticleType.Oxygen && particle.temp < -500) {
-        if (particle.density! > .05)
-            placeParticle(pos, ParticleType.LiquidOxygen);
-        else
-            clearParticle(pos);
+    
+    if (particle.density == undefined || particle.density > .5) {
+        if (data.above) {
+            if (particle.temp >= data.above[0]) {
+                placeParticle(pos, data.above[1], particle.temp);
+                return
+            }
+        }
+        if (data.below) {
+            if (particle.temp < data.below[0]) {
+                placeParticle(pos, data.below[1], particle.temp);
+                return
+            }
+        }
     }
 
     // clone
@@ -292,8 +314,8 @@ export function particleReactions(current: [Pos, Particle], other: [Pos, Particl
 
     // heat diffusion
     {
-        let heat_diffusion_amount = data.heat_conductivity ?? .01;
-        heat_diffusion_amount *= other_data.heat_conductivity ?? .01;
+        let heat_diffusion_amount = data.heat_conductivity ?? .05;
+        heat_diffusion_amount *= other_data.heat_conductivity ?? .05;
         other_particle.temp += (particle.temp - other_particle.temp) * heat_diffusion_amount;
     }
 

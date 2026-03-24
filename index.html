@@ -20,7 +20,14 @@
             </div>
             <div class="column">
               <div id="topbar">
-                <span id="particle-count">100000</span>
+                <div>
+                  <span>Particles: </span>
+                  <span id="particle-count">100000</span>
+                </div>
+                <div> 
+                  <span>Brush Size: </span>
+                  <input type="range" id="brush-size" min="1" max="20">
+                </div>
               </div>
               <canvas id="canvas"></canvas>
             </div>
