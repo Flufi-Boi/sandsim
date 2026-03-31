@@ -43,6 +43,7 @@ export enum ParticleType {
     Oil,
     LiquidOxygen,
     MoltenTin,
+    MoltenGlass,
 
     Steam,
     Gas,
@@ -126,8 +127,8 @@ export const particleData: Record<ParticleType, {
 		heavyness: 15, // todo: make it 215738123715263123726
 
 		above: [
-			[1700, ParticleType.Glass],
-			[2000000000, ParticleType.Oil]
+			[1700, ParticleType.MoltenGlass],
+			[20000, ParticleType.Oil]
 		],
 	},
 
@@ -172,6 +173,17 @@ export const particleData: Record<ParticleType, {
         heavyness: 30,
 
         below: [180, ParticleType.Tin]
+    },
+    [ParticleType.MoltenGlass]: {
+        color: "#ff7829ff",
+
+        behaviour: ParticleBehaviour.Liquid,
+        resting_temp: 1700,
+        slide_percent: 0.5,
+        heat_conductivity: 0.2,
+        heavyness: 40,
+
+        below: [1690, ParticleType.Glass]
     },
 
     [ParticleType.Steam]: {
@@ -249,8 +261,8 @@ function sortAboveBelow(type: "above" | "below", data: [number, ParticleType][])
 	});
 }
 function convertAboveBelowArr(val: [number, ParticleType] | [number, ParticleType][]): [number, ParticleType][] {
-    if (!Array.isArray(val))
-        return [val];
+    if (!Array.isArray(val[0]))
+        return [val] as [number, ParticleType][];
     return val as [number, ParticleType][];
 }
 
@@ -375,8 +387,8 @@ export function particleReactions(current: [Pos, Particle], other: [Pos, Particl
 
     // heat diffusion
     {
-        let heat_diffusion_amount = data.heat_conductivity ?? .05;
-        heat_diffusion_amount *= other_data.heat_conductivity ?? .05;
+        let heat_diffusion_amount = data.heat_conductivity ?? .07;
+        heat_diffusion_amount *= other_data.heat_conductivity ?? .07;
         other_particle.temp += (particle.temp - other_particle.temp) * heat_diffusion_amount;
     }
 
