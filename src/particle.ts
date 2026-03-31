@@ -141,7 +141,7 @@ export const particleData: Record<ParticleType, {
         resting_temp: -500,
         heavyness: 30,
 
-        above: [-500, ParticleType.Oxygen]
+        above: [-450, ParticleType.Oxygen]
     },
     [ParticleType.MoltenTin]: {
         color: "#ff450d",
@@ -177,7 +177,7 @@ export const particleData: Record<ParticleType, {
 
         flammable: true,
 
-        below: [-450, ParticleType.LiquidOxygen]
+        below: [-500, ParticleType.LiquidOxygen]
     },
     
     [ParticleType.Fire]: {
