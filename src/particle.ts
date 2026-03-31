@@ -31,10 +31,12 @@ export enum ParticleType {
     Wood,
     Metal,
     Tin,
+	Glass,
 
     Clone,
 
-    SawDust,
+	SawDust,
+	Sand,
 
     Water,
     Acid,
@@ -51,24 +53,24 @@ export enum ParticleType {
 }
 
 export const particleData: Record<ParticleType, {
-    color: string,                           // its color
+    color: string,                                                      // its color
 
-    behaviour: ValOrFunc<ParticleBehaviour>, // how it should behave
-    heavyness?: number,                      // sortof falling priority
-    slide_percent?: number,                  // how often it should slide
-    resting_temp?: number,                   // base temp of particle
-    heat_conductivity?: number,              // how fast temperature conducts
+    behaviour: ValOrFunc<ParticleBehaviour>,                            // how it should behave
+    heavyness?: number,                                                 // sortof falling priority
+    slide_percent?: number,                                             // how often it should slide
+    resting_temp?: number,                                              // base temp of particle
+    heat_conductivity?: number,                                         // how fast temperature conducts
 
-    above?: [number, ParticleType],          // once the particle is above this, switch
-    below?: [number, ParticleType],          // once the particle is below this, switch
+    above?: [number, ParticleType] | [number, ParticleType][],          // once the particle is above this, switch
+    below?: [number, ParticleType] | [number, ParticleType][],          // once the particle is below this, switch
 
-    acidic?: boolean,                        // is acidic
-    acid_immune?: boolean,                   // doesnt not get corroded by acid
+    acidic?: boolean,                                                   // is acidic
+    acid_immune?: boolean,                                              // doesnt not get corroded by acid
     
-    flammable?: boolean,                     // if it burns in contact with fire
-    fire_speed?: number,                     // how long it should burn for
-    causes_fire?: ValOrFunc<boolean>,        // if it causes neighbors to burn
-    emit_fire_percent?: ValOrFunc<number>,   // how often it should emit fire
+    flammable?: boolean,                                                // if it burns in contact with fire
+    fire_speed?: number,                                                // how long it should burn for
+    causes_fire?: ValOrFunc<boolean>,                                   // if it causes neighbors to burn
+    emit_fire_percent?: ValOrFunc<number>,                              // how often it should emit fire
 }> = {
     [ParticleType.Wood]: {
         color: "#a3531d",
@@ -76,7 +78,7 @@ export const particleData: Record<ParticleType, {
         behaviour: ParticleBehaviour.Solid,
         heavyness: 5,
 
-        flammable: true
+        flammable: true,
     },
     [ParticleType.Metal]: {
         color: "#818181ff",
@@ -91,9 +93,15 @@ export const particleData: Record<ParticleType, {
         behaviour: ParticleBehaviour.Solid,
         heavyness: 20,
         heat_conductivity: .2,
-
+		
         above: [200, ParticleType.MoltenTin]
     },
+	[ParticleType.Glass]: {
+		color: "#80ede5cc",
+		
+		heat_conductivity: .02,
+		behaviour: ParticleBehaviour.Solid,
+	},
 
     [ParticleType.Clone]: {
         color: "#f3d31cff",
@@ -108,7 +116,20 @@ export const particleData: Record<ParticleType, {
         heavyness: 15,
 
         flammable: true
-    },
+	},
+	
+	[ParticleType.Sand]: {
+		color: "#fcc735",
+
+		heat_conductivity: .02,
+		behaviour: ParticleBehaviour.Powder,
+		heavyness: 15, // todo: make it 215738123715263123726
+
+		above: [
+			[1700, ParticleType.Glass],
+			[2000000000, ParticleType.Oil]
+		],
+	},
 
     [ParticleType.Water]: {
         color: "#489ce0ff",
@@ -205,6 +226,34 @@ export const particleData: Record<ParticleType, {
     }
 };
 
+function sortAboveBelow(type: "above" | "below", data: [number, ParticleType][]) {
+	return data.toSorted((a, b) => {
+		// equal
+		if (a[0] === b[0]) return 0;
+		
+		if (type === "above"){
+			// highest first
+			if (a[0] > b[0]) return -1;
+			if (b[0] > a[0]) return 1;
+		}
+		
+		else if (type === "below"){
+			// lowest first
+			if (a[0] > b[0]) return 1;
+			if (b[0] > a[0]) return -1;
+		}
+		
+		// if somehow none of
+		// the above match
+		return 0;
+	});
+}
+function convertAboveBelowArr(val: [number, ParticleType] | [number, ParticleType][]): [number, ParticleType][] {
+    if (!Array.isArray(val))
+        return [val];
+    return val as [number, ParticleType][];
+}
+
 export const puts_out_fires: ParticleType[] = [
     ParticleType.Water
 ];
@@ -215,7 +264,6 @@ export const neighbors: Pos[] = [
     [0,  1],
     [0, -1],
 ];
-
 
 export function updateParticle(particle: Particle, pos: Pos) {
     if (!particle)
@@ -275,16 +323,29 @@ export function updateParticle(particle: Particle, pos: Pos) {
     
     if (particle.density == undefined || particle.density > .5) {
         if (data.above) {
-            if (particle.temp >= data.above[0]) {
-                placeParticle(pos, data.above[1], particle.temp);
-                return
-            }
-        }
-        if (data.below) {
-            if (particle.temp < data.below[0]) {
-                placeParticle(pos, data.below[1], particle.temp);
-                return
-            }
+			const above = sortAboveBelow("above", convertAboveBelowArr(data.above));
+			
+			for (let i = 0; i < above.length; i++) {
+				const thing = above[i];
+
+				if (particle.temp >= thing[0]) {
+					placeParticle(pos, thing[1], particle.temp);
+					return;
+				}
+			}
+		}
+		
+		if (data.below) {
+			const below = sortAboveBelow("below", convertAboveBelowArr(data.below));
+
+			for (let i = 0; i < below.length; i++) {
+				const thing = below[i];
+				
+				if (particle.temp < thing[0]) {
+					placeParticle(pos, thing[1], particle.temp);
+					return;
+				}
+			}
         }
     }
 
